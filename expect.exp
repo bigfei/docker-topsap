@@ -1,10 +1,28 @@
+#!/usr/bin/expect -f
+
+# Set timeout value (optional)
+set timeout 30
+
+# Start the VPN login process
 spawn /opt/TopSAP/topvpn login
+
+# Handle server address prompt
 expect "Input your server address"
-send "{{server_address}}\n"
+send "$env(SERVER_ADDRESS)\r"
+
+# Handle login mode selection
 expect "Login_Mode"
-send "1\n"
+send "1\r"
+
+# Handle username prompt
 expect "Please enter user and password"
-send "{{user_name}}\n"
+send "$env(USER_NAME)\r"
+
+# Handle password prompt
 expect "Password:"
-send "{{password}}\n"
-interact
+send "$env(PASSWORD)\r"
+
+# Wait for success message
+expect "Login Success!"
+expect eof
+

@@ -16,37 +16,21 @@ function cleanup {
 
 # 捕获 INT 信号，并调用 cleanup 函数
 trap cleanup INT
-
-sed -i "s/{{server_address}}/$SERVER_ADDRESS/g" expect.exp
-sed -i "s/{{user_name}}/$USER_NAME/g" expect.exp
-sed -i "s/{{password}}/$PASSWORD/g" expect.exp
-
 cd /opt/TopSAP && ./sv_websrv >/home/work/sv_websrv.log 2>&1 &
 
 sleep 1
 
-expect -f expect.exp
+/home/work/expect.exp
 
-for i in {1..3}; do
-  if [ -e "/sys/class/net/tun0" ]; then
-    # 如果设备存在，跳出循环
-    danted -f /etc/danted.conf &
-    break
-  else
-    # 如果设备不存在，等待三秒后进行下一次判断
-    sleep 3
-  fi
+while ! ip address show tun0 > /dev/null; do
+    sleep 1
 done
 
-# 循环结束后判断设备是否存在
-if [ ! -e "/sys/class/net/tun0" ]; then
-  echo "Device tun0 not found."
-  exit 1
-fi
+danted -f /etc/danted.conf &
 
 # 更改MTU（与 topsap 的默认值保持一致）
 ip link set dev tun0 mtu 1300
 
 # 添加NAT转发，使其他请求可以走正常出口，不全部走代理，例如公网请求
-iptables -t nat -A POSTROUTING -o eth0 -j MASQUERADE
-wait
+iptables -t nat -A POSTROUTING -o tun0 -j MASQUERADE
+tail -f /dev/null
